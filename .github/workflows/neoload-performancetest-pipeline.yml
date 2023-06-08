@@ -1,0 +1,39 @@
+name: Neoload Test
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  neoload_test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install Neoload CLI
+        run: pip3 install -U neoload
+                  
+      - name: "Prepare NeoLoad test"
+        run: >
+          neoload login --url 'https://neoload-api.saas.neotys.com/' '2715b6aafd2f6eb568e7d62b709e5a28a4cf6df9711db161' \
+                  test-settings --zone defaultzone --scenario 'HappyFlow' createorpatch "My Github Test With CLI" \
+                  project --path demowebshopp.zip upload
+        
+      - name: Extract Neoload test project
+        run: unzip demowebshopp.zip -d demowebshopp
+        
+      - name: Run Neoload test
+        run: neoload run --scenario 'HappyFlow'
+        
+      - name: "Generate Test Report"
+        run: neoload test-results junitsla
+
+      - name: "Publish Test Report"
+        if: ${{ always() }}
+        uses: scacap/action-surefire-report@v1
+        with:
+          report_paths: junit-sla.xml
+          fail_on_test_failures: true
